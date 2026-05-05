@@ -1,1 +1,0 @@
-<?php echo password_hash('genhash.php', PASSWORD_BCRYPT); ?>
