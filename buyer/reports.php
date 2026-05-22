@@ -1,8 +1,8 @@
 <?php
-$page_title = 'Purchase Reports';
-require_once __DIR__ . '/../includes/header.php';
-requireLogin();
+// ── Bootstrap only config (no HTML output) ──────────────────────────────────
+require_once __DIR__ . '/../config/database.php';
 
+requireLogin();
 if ($_SESSION['role'] !== 'buyer') {
     header('Location: ../products/browse.php'); exit();
 }
@@ -10,50 +10,26 @@ if ($_SESSION['role'] !== 'buyer') {
 $pdo    = getDBConnection();
 $userId = $_SESSION['user_id'];
 
-// ── Premium gate ──────────────────────────────────────────────────────────────
+// ── Premium gate check ────────────────────────────────────────────────────────
 $bStmt = $pdo->prepare("SELECT *, is_premium, premium_until FROM users WHERE id=?");
 $bStmt->execute([$userId]);
 $buyer     = $bStmt->fetch();
 $isPremium = !empty($buyer['is_premium']) && strtotime($buyer['premium_until']) > time();
 
-if (!$isPremium) {
-    // Show upgrade wall instead of report
-    ?>
-    <div style="background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;">
-        <div style="max-width:440px;text-align:center;">
-            <div style="font-size:3.5rem;margin-bottom:1rem;">📋</div>
-            <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;margin-bottom:.5rem;">Purchase Reports</h2>
-            <p style="color:var(--text-muted);margin-bottom:1.5rem;">
-                Detailed spending analytics and CSV exports are a <strong>Premium Buyer</strong> perk.
-                Upgrade to unlock full reporting, price drop alerts, early harvest access, and more.
-            </p>
-            <a href="premium.php" style="display:inline-block;background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:white;font-weight:800;padding:.75rem 2rem;border-radius:99px;text-decoration:none;font-size:.95rem;">
-                ⭐ Upgrade to Premium
-            </a>
-            <div style="margin-top:1rem;">
-                <a href="dashboard.php" style="color:var(--text-muted);font-size:.82rem;">← Back to Dashboard</a>
-            </div>
-        </div>
-    </div>
-    <?php
-    require_once __DIR__ . '/../includes/footer.php';
-    exit();
-}
-
 // ── Filters ───────────────────────────────────────────────────────────────────
 $rangeMap = [
-    '7d'  => ['label' => 'Last 7 days',   'days' => 7],
-    '30d' => ['label' => 'Last 30 days',  'days' => 30],
-    '90d' => ['label' => 'Last 90 days',  'days' => 90],
-    '1y'  => ['label' => 'Last 12 months','days' => 365],
-    'all' => ['label' => 'All time',      'days' => null],
+    '7d'  => ['label' => 'Last 7 days',    'days' => 7],
+    '30d' => ['label' => 'Last 30 days',   'days' => 30],
+    '90d' => ['label' => 'Last 90 days',   'days' => 90],
+    '1y'  => ['label' => 'Last 12 months', 'days' => 365],
+    'all' => ['label' => 'All time',       'days' => null],
 ];
 $range    = isset($_GET['range']) && isset($rangeMap[$_GET['range']]) ? $_GET['range'] : '30d';
 $rDays    = $rangeMap[$range]['days'];
 $dateWhere = $rDays ? "AND o.created_at >= DATE_SUB(NOW(), INTERVAL $rDays DAY)" : '';
 
-// ── CSV export ────────────────────────────────────────────────────────────────
-if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+// ── CSV export (MUST run before any HTML output) ──────────────────────────────
+if ($isPremium && isset($_GET['export']) && $_GET['export'] === 'csv') {
     $exportSql = "
         SELECT o.id as order_id, o.created_at, o.status,
                u.name as farmer_name,
@@ -68,7 +44,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $eStmt->execute([$userId]);
     $rows = $eStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    ob_clean(); // ← discard all buffered HTML output
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="greenlink_orders_' . date('Ymd') . '.csv"');
     $out = fopen('php://output', 'w');
@@ -90,6 +65,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     exit();
 }
 
+// ── NOW it's safe to load the header (outputs HTML) ──────────────────────────
+$page_title = 'Purchase Reports';
+require_once __DIR__ . '/../includes/header.php';
 
 // ── Summary stats ─────────────────────────────────────────────────────────────
 $sumStmt = $pdo->prepare("

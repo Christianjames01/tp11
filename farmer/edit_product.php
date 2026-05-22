@@ -238,9 +238,16 @@ header('Location: products.php'); exit();
                     </div>
                 <?php endif; ?>
             </div>
-            <input type="file" name="image" id="imageInput0" accept="image/*" style="display:none;" onchange="previewImg(this, 'imageUploadArea0', 'uploadPlaceholder0')">
+           <input type="file" name="image" id="imageInput0" accept="image/*" style="display:none;" onchange="previewImg(this, 'imageUploadArea0', 'uploadPlaceholder0')">
+            <?php if ($product['image']): ?>
+            <a href="delete_product_image.php?main=1&product_id=<?= $pid ?>"
+               onclick="return confirm('Delete main photo?')"
+               style="display:inline-flex;align-items:center;gap:5px;color:#ef4444;font-size:0.72rem;font-weight:700;text-decoration:none;margin-top:4px;">
+                <i class="fa-solid fa-trash"></i> Remove main photo
+            </a>
+            <?php endif; ?>
 
-            <!-- Extra Carousel Images -->
+           <!-- Extra Carousel Images -->
             <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
                 🎠 Carousel Photos (up to 3)
             </div>
@@ -253,21 +260,28 @@ header('Location: products.php'); exit();
                 <?php foreach ([1,2,3] as $n):
                     $existing = $existingExtras[$n-1] ?? null;
                 ?>
-                <div class="img-upload-area" id="imageUploadArea<?= $n ?>" onclick="document.getElementById('imageInput<?= $n ?>').click()"
-                     style="height:80px;flex-direction:row;gap:10px;padding:0.6rem 1rem;position:relative;">
-                    <?php if ($existing): ?>
-                        <img src="../assets/images/products/<?= sanitize($existing['image']) ?>" class="preview-thumb"
-                             style="width:100%;height:100%;object-fit:cover;border-radius:10px;position:absolute;inset:0;">
-                        <div id="uploadPlaceholder<?= $n ?>" style="display:none;"></div>
-                        <input type="hidden" name="existing_extra_ids[]" value="<?= $existing['id'] ?>">
-                    <?php else: ?>
-                        <div id="uploadPlaceholder<?= $n ?>" style="display:flex;align-items:center;gap:10px;width:100%;">
-                            <div style="font-size:1.4rem;">📸</div>
-                            <div>
-                                <div style="font-weight:700;color:var(--text);font-size:0.78rem;">Photo <?= $n ?></div>
-                                <div style="font-size:0.68rem;color:var(--text-muted);">Optional · Max 3MB</div>
+                <div style="position:relative;">
+                    <div class="img-upload-area" id="imageUploadArea<?= $n ?>" onclick="document.getElementById('imageInput<?= $n ?>').click()"
+                         style="height:80px;flex-direction:row;gap:10px;padding:0.6rem 1rem;position:relative;">
+                        <?php if ($existing): ?>
+                            <img src="../assets/images/products/<?= sanitize($existing['image']) ?>" class="preview-thumb"
+                                 style="width:100%;height:100%;object-fit:cover;border-radius:10px;position:absolute;inset:0;">
+                            <div id="uploadPlaceholder<?= $n ?>" style="display:none;"></div>
+                            <input type="hidden" name="existing_extra_ids[]" value="<?= $existing['id'] ?>">
+                        <?php else: ?>
+                            <div id="uploadPlaceholder<?= $n ?>" style="display:flex;align-items:center;gap:10px;width:100%;">
+                                <div style="font-size:1.4rem;">📸</div>
+                                <div>
+                                    <div style="font-weight:700;color:var(--text);font-size:0.78rem;">Photo <?= $n ?></div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted);">Optional · Max 3MB</div>
+                                </div>
                             </div>
-                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($existing): ?>
+                    <a href="delete_product_image.php?id=<?= $existing['id'] ?>&product_id=<?= $pid ?>"
+                       onclick="return confirm('Delete this photo?')"
+                       style="position:absolute;top:4px;right:4px;background:#ef4444;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;text-decoration:none;z-index:10;font-weight:800;line-height:1;">✕</a>
                     <?php endif; ?>
                 </div>
                 <input type="file" name="extra_images[]" id="imageInput<?= $n ?>" accept="image/*" style="display:none;"
